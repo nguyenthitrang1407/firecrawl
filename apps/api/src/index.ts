@@ -55,7 +55,9 @@ cacheableLookup.install(https.globalAgent);
 
 // Initialize Express with WebSocket support
 const expressApp = express();
-const ws = expressWs(expressApp);
+// Create HTTP server first, then attach express-ws to avoid port conflicts
+const httpServer = http.createServer(expressApp);
+const ws = expressWs(expressApp, httpServer);
 const app = ws.app;
 
 global.isProduction = config.IS_PRODUCTION;
@@ -125,7 +127,8 @@ async function startServer(port = DEFAULT_PORT) {
   // Attach WebSocket proxy to the Express app
   attachWsProxy(app);
 
-  const server = app.listen(Number(port), HOST, () => {
+  // Use the pre-created httpServer instead of app.listen() to avoid port conflicts with express-ws
+  const server = httpServer.listen(Number(port), HOST, () => {
     logger.info(`Worker ${process.pid} listening on port ${port}`);
   });
 

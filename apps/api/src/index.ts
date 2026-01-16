@@ -20,6 +20,7 @@ import http from "node:http";
 import https from "node:https";
 import { v1Router } from "./routes/v1";
 import expressWs from "express-ws";
+import { WebSocketServer } from "ws";
 import {
   ErrorResponse,
   RequestWithMaybeACUC,
@@ -55,9 +56,12 @@ cacheableLookup.install(https.globalAgent);
 
 // Initialize Express with WebSocket support
 const expressApp = express();
-// Create HTTP server first, then attach express-ws to avoid port conflicts
+// Create HTTP server first
 const httpServer = http.createServer(expressApp);
-const ws = expressWs(expressApp, httpServer);
+// Create WebSocketServer attached to the HTTP server (not listening on its own port)
+const wss = new WebSocketServer({ server: httpServer });
+// Pass the WebSocketServer to express-ws
+const ws = expressWs(expressApp, httpServer, { wsOptions: { noServer: true } });
 const app = ws.app;
 
 global.isProduction = config.IS_PRODUCTION;
